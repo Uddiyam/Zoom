@@ -42,6 +42,7 @@ wss.on("connection",(socket) => {
 
 wsServer.on("connection", (socket) => {
   socket.on("enter_room", (roomName, done) => {
+    done();
     console.log(roomName);
     console.log(socket.id);
     console.log(socket.rooms);
