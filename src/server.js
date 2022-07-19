@@ -43,11 +43,16 @@ wss.on("connection",(socket) => {
 wsServer.on("connection", (socket) => {
   socket.on("enter_room", (roomName, done) => {
     done();
-    console.log(roomName);
-    console.log(socket.id);
-    console.log(socket.rooms);
+
     socket.join(roomName);
-    console.log(socket.rooms);
+    socket.to(roomName).emit("welcome");
+  });
+  socket.on("disconnecting", () => {
+    socket.rooms.forEach((room) => socket.to(room).emit("bye")); // rooms는 접속중인 채팅룸 목록을 뜻하는 set객체(반복 가능객체)
+  });
+  socket.on("new_message", (msg, room, done) => {
+    socket.to(room).emit("send_message", msg);
+    done();
   });
 });
 
