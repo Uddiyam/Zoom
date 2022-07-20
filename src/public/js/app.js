@@ -60,7 +60,7 @@ function addMessage(message) {
 
 function handleMessageSubmit(event) {
   event.preventDefault();
-  const input = room.querySelector("input");
+  const input = room.querySelector("#msg input");
   const value = input.value;
   socket.emit("new_message", value, roomName, () => {
     addMessage(`You: ${value}`);
@@ -68,13 +68,24 @@ function handleMessageSubmit(event) {
   input.value = "";
 }
 
+function handleNicknameSubmit(e) {
+  e.preventDefault();
+  const input = room.querySelector("#name input");
+  const value = input.value;
+  socket.emit("nickname", value);
+  input.value = "";
+}
+
+// 사용자가 채팅룸에 접속하면 동작하는 함수
 function showRoom() {
   welcome.hidden = true;
   room.hidden = false;
   const h3 = room.querySelector("h3");
   h3.innerText = `Room ${roomName}`;
-  const form = room.querySelector("form");
-  form.addEventListener("submit", handleMessageSubmit);
+  const msgForm = room.querySelector("#msg");
+  const nameForm = room.querySelector("#name");
+  msgForm.addEventListener("submit", handleMessageSubmit);
+  nameForm.addEventListener("submit", handleNicknameSubmit);
 }
 
 function handleRoomSubmit(event) {
@@ -86,14 +97,32 @@ function handleRoomSubmit(event) {
 }
 
 form.addEventListener("submit", handleRoomSubmit);
-socket.on("welcome", () => {
-  addMessage("someone joined!");
+
+socket.on("welcome", (userNickname, newCount) => {
+  const h3 = room.querySelector("h3");
+  h3.innerText = `Room ${roomName} (${newCount})`;
+  addMessage(`${userNickname} arrived!`);
 });
 
-socket.on("bye", () => {
-  addMessage("someone left ㅠㅠ");
+socket.on("bye", (userNickname, newCount) => {
+  const h3 = room.querySelector("h3");
+  h3.innerText = `Room ${roomName} (${newCount})`;
+  addMessage(`${userNickname} left ㅠㅠ`);
 });
 
 socket.on("send_message", (msg) => {
   addMessage(msg);
+});
+
+socket.on("room_change", (rooms) => {
+  const roomList = welcome.querySelector("ul");
+  roomList.innerHTML = ""; // ul에 빈 문자열을 대입해서 ul 내부에 있던 기존 내용 삭제(room_change 이벤트를 처리할 때마다 채팅룸 목록을 화면에 새로 표시하기 때문에 매번 해줘야 함)
+  if (rooms.length === 0) {
+    return;
+  }
+  rooms.forEach((room) => {
+    const li = document.createElement("li");
+    li.innerText = room;
+    roomList.append(li);
+  });
 });
