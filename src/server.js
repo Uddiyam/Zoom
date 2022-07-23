@@ -1,9 +1,9 @@
 import express from "express";
 import http from "http";
 // import WebSocket from 'ws';
-// import SocktIO from "socket.io";
-import { Server } from "socket.io";
-import { instrument } from "@socket.io/admin-ui";
+import SocktIO from "socket.io";
+// import { Server } from "socket.io";
+// import { instrument } from "@socket.io/admin-ui";
 
 const app = express(); // expres는 HTTP 기반으로 동작
 
@@ -17,7 +17,10 @@ app.get("/", (req, res) => res.render("home"));
 app.get("/*", (req, res) => res.redirect("/"));
 
 const httpServer = http.createServer(app);
-// const wsServer = SocktIO(httpServer);
+const wsServer = SocktIO(httpServer);
+
+/*
+const wsServer = SocktIO(httpServer);
 const wsServer = new Server(httpServer, {
   cors: {
     origin: ["https://admin.socket.io"], //socket.io에서 제공하는 데모 서버 주소
@@ -50,7 +53,7 @@ function countRoom(roomName) {
   return wsServer.sockets.adapter.rooms.get(roomName)?.size;
 }
 
-/*const wss = new WebSocket.Server({ server });   // 서버에 웹소켓 프로토콜 추가 => HTTP 서버는 사용자에게 뷰 엔진을 이용해 만든 뷰, 정적 파일, 리다이렉션 등 제공, 웹소켓 서버는 실시간 채팅 기능 제공
+const wss = new WebSocket.Server({ server });   // 서버에 웹소켓 프로토콜 추가 => HTTP 서버는 사용자에게 뷰 엔진을 이용해 만든 뷰, 정적 파일, 리다이렉션 등 제공, 웹소켓 서버는 실시간 채팅 기능 제공
 
 const sockets = [];
 
@@ -71,7 +74,7 @@ wss.on("connection",(socket) => {
         }
     });
 })
-*/
+
 
 wsServer.on("connection", (socket) => {
   socket["nickname"] = "Anon";
@@ -103,6 +106,6 @@ wsServer.on("connection", (socket) => {
   });
   socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
 });
-
+*/
 const handleListen = () => console.log("Listening on http://localhost:3000");
 httpServer.listen(3000, handleListen);

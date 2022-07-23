@@ -39,9 +39,7 @@ function handleNickSubmit(event){
 
 messageForm.addEventListener("submit", handleSubmit);
 nickForm.addEventListener("submit", handleNickSubmit);
-*/
 
-const socket = io();
 
 const welcome = document.getElementById("welcome");
 const form = welcome.querySelector("form");
@@ -126,3 +124,52 @@ socket.on("room_change", (rooms) => {
     roomList.append(li);
   });
 });
+*/
+
+const socket = io();
+
+const myFace = document.getElementById('myFace');
+const muteBtn = document.getElementById('mute');
+const cameraBtn = document.getElementById('camera');
+
+let myStream;
+let muted = false;
+let cameraOff = false;
+
+async function getMedia() {
+  try {
+    // JS API에서 제공되는 메서드, 스트림 반환은 비동기적으로 처리되므로 async-await로 처리
+    myStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: true,
+    });
+    myFace.srcObject = myStream;
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+getMedia();
+
+function handleMuteClick() {
+  if (!muted) {
+    muteBtn.innerText = 'Unmute';
+    muted = true;
+  } else {
+    muteBtn.innerText = 'Mute';
+    muted = false;
+  }
+}
+
+function handleCameraClick() {
+  if (!cameraOff) {
+    cameraBtn.innerText = 'Turn Camera On';
+    cameraOff = true;
+  } else {
+    cameraBtn.innerText = 'Turn Camera Off';
+    cameraOff = false;
+  }
+}
+
+muteBtn.addEventListener('click', handleMuteClick);
+cameraBtn.addEventListener('click', handleCameraClick);
