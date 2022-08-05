@@ -131,19 +131,49 @@ const socket = io();
 const myFace = document.getElementById('myFace');
 const muteBtn = document.getElementById('mute');
 const cameraBtn = document.getElementById('camera');
+const cameraSelect = document.getElementById('cameras');
 
 let myStream;
 let muted = false;
 let cameraOff = false;
 
-async function getMedia() {
+async function getCameras() {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices(); // 모든 기기 정보를 가져와 주는 메서드
+    const cameras = devices.filter((device) => device.kind === 'videoinput');
+    const currentCamera = myStream.getVideoTracks()[0];
+    cameras.forEach((camera) => {
+      const option = document.createElement('option');
+      option.value = camera.deviceId;
+      option.innerText = camera.label;
+      if (currentCamera.label == camera.label) {
+        option.selected = true;
+      }
+      cameraSelect.appendChild(option);
+    });
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+async function getMedia(deviceId) {
+  const initialConstraints = {
+    audio: true,
+    video: { facingMode: 'user' }, // 모바일 장치의 전면 카메라 요청 (PC에서는 내장된 기본 카메라)
+  };
+  const cameraConstraints = {
+    audio: true,
+    video: { deviceId: { exact: deviceId } },
+  };
   try {
     // JS API에서 제공되는 메서드, 스트림 반환은 비동기적으로 처리되므로 async-await로 처리
-    myStream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: true,
-    });
+    myStream = await navigator.mediaDevices.getUserMedia(
+      deviceId ? cameraConstraints : initialConstraints
+    );
     myFace.srcObject = myStream;
+    if (!deviceId) {
+      await getCameras();
+    }
   } catch (e) {
     console.log(e);
   }
@@ -177,5 +207,10 @@ function handleCameraClick() {
   }
 }
 
+async function handleCameraChange() {
+  await getMedia(cameraSelect.value);
+}
+
 muteBtn.addEventListener('click', handleMuteClick);
 cameraBtn.addEventListener('click', handleCameraClick);
+cameraSelect.addEventListener('input', handleCameraChange);
