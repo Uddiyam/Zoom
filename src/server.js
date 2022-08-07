@@ -1,23 +1,35 @@
-import express from "express";
-import http from "http";
+import express from 'express';
+import http from 'http';
 // import WebSocket from 'ws';
-import SocktIO from "socket.io";
+import SocktIO from 'socket.io';
 // import { Server } from "socket.io";
 // import { instrument } from "@socket.io/admin-ui";
 
 const app = express(); // expres는 HTTP 기반으로 동작
 
-app.set("view engine", "pug");
-app.set("views", __dirname + "/views"); //__dirname은 Node.js의 기본 전역 변수, 현재 실행하는 폴더의 경로
+app.set('view engine', 'pug');
+app.set('views', __dirname + '/views'); //__dirname은 Node.js의 기본 전역 변수, 현재 실행하는 폴더의 경로
 
-app.use("/public", express.static(__dirname + "/public"));
+app.use('/public', express.static(__dirname + '/public'));
 
 // app.get 메서드 -> 서버에 HTTP 요청이 왔을 때 지정된 콜백을 이용하여 라우팅 처리 해줌
-app.get("/", (req, res) => res.render("home"));
-app.get("/*", (req, res) => res.redirect("/"));
+app.get('/', (req, res) => res.render('home'));
+app.get('/*', (req, res) => res.redirect('/'));
 
 const httpServer = http.createServer(app);
 const wsServer = SocktIO(httpServer);
+
+wsServer.on('connection', (socket) => {
+  socket.on('join_room', (roomName, done) => {
+    socket.join(roomName);
+    done();
+    socket.to(roomName).emit('welcome');
+  });
+
+  socket.on('offer', (offer, roomName) => {
+    socket.to(roomName).emit('offer', offer);
+  });
+});
 
 /*
 const wsServer = SocktIO(httpServer);
@@ -107,5 +119,5 @@ wsServer.on("connection", (socket) => {
   socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
 });
 */
-const handleListen = () => console.log("Listening on http://localhost:3000");
+const handleListen = () => console.log('Listening on http://localhost:3000');
 httpServer.listen(3000, handleListen);
