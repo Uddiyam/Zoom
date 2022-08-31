@@ -222,17 +222,18 @@ const welcomeForm = welcome.querySelector('form');
 
 call.hidden = true;
 
-async function starMedia() {
+async function initCall() {
   welcome.hidden = true;
   call.hidden = false;
   await getMedia();
   makeConnection();
 }
 
-function handleWelcomeSubmit(e) {
+async function handleWelcomeSubmit(e) {
   e.preventDefault();
   const input = welcomeForm.querySelector('input');
-  socket.emit('join_room', input.value, starMedia);
+  await initCall();
+  socket.emit('join_room', input.value);
   roomName = input.value;
   input.value = '';
 }
@@ -247,15 +248,42 @@ socket.on('welcome', async () => {
   socket.emit('offer', offer, roomName);
 });
 
-socket.on('offer', (offer) => {
+socket.on('offer', async (offer) => {
+  console.log('received the offer');
   // offer를 받는 쪽
-  console.log(offer);
+  myPeerConnection.setRemoteDescription(offer); // 전달받은 데이터를 이용해 연결을 설정
+  const answer = await myPeerConnection.createAnswer();
+  myPeerConnection.setLocalDescription(answer);
+  socket.emit('answer', answer, roomName);
+  console.log('sent the answer');
+});
+
+socket.on('answer', (answer) => {
+  console.log('received the answer');
+  myPeerConnection.setRemoteDescription(answer);
+});
+
+socket.on('ice', (ice) => {
+  console.log('received candidate');
+  myPeerConnection.addIceCandidate(ice); // 전달받은 candidate를 내 peer에 추가
 });
 
 // RTC Code
 function makeConnection() {
   myPeerConnection = new RTCPeerConnection();
+  myPeerConnection.addEventListener('icecandidate', handleIce);
+  myPeerConnection.addEventListener('addstream', handleAddStream); // peer 간의 연결에 스트림을 추가하면 발생하는 이벤트
   myStream
     .getTracks()
     .forEach((track) => myPeerConnection.addTrack(track, myStream));
+}
+
+function handleIce(data) {
+  console.log('sent candidate');
+  socket.emit('ice', data.candidate, roomName);
+}
+
+function handleAddStream(data) {
+  const peerFace = document.getElementById('peerFace');
+  peerFace.srcObject = data.stream;
 }
