@@ -139,6 +139,7 @@ let muted = false;
 let cameraOff = false;
 let roomName;
 let myPeerConnection;
+let myDataChannel;
 
 async function getCameras() {
   try {
@@ -210,6 +211,13 @@ function handleCameraClick() {
 
 async function handleCameraChange() {
   await getMedia(cameraSelect.value);
+  if (myPeerConnection) {
+    const videoTrack = myStream.getVideoTracks()[0];
+    const videoSender = myPeerConnection
+      .getSenders()
+      .find((sender) => sender.track.kind === 'video');
+    videoSender.replaceTrack(videoTrack); // 트랙 변경
+  }
 }
 
 muteBtn.addEventListener('click', handleMuteClick);
@@ -242,6 +250,11 @@ welcomeForm.addEventListener('submit', handleWelcomeSubmit);
 
 // Socket Code
 socket.on('welcome', async () => {
+  myDataChannel = myPeerConnection.createDataChannel('chat');
+  myDataChannel.addEventListener('message', (e) => {
+    console.log(e.data);
+  });
+  console.log('made data channel');
   const offer = await myPeerConnection.createOffer();
   myPeerConnection.setLocalDescription(offer); // 연결의 속성(미디어 형식 같은 것) 지정 -> offer를 보내는 쪽이 자신의 연결 객체에 offer를 보낼 거라는 것 명시
   console.log('sent the offer'); // offer를 보내는 쪽
@@ -249,6 +262,12 @@ socket.on('welcome', async () => {
 });
 
 socket.on('offer', async (offer) => {
+  myPeerConnection.addEventListener('datachannel', (e) => {
+    myDataChannel = e.channel;
+    myDataChannel.addEventListener('message', (e) => {
+      console.log(e.data);
+    });
+  });
   console.log('received the offer');
   // offer를 받는 쪽
   myPeerConnection.setRemoteDescription(offer); // 전달받은 데이터를 이용해 연결을 설정
@@ -270,7 +289,20 @@ socket.on('ice', (ice) => {
 
 // RTC Code
 function makeConnection() {
-  myPeerConnection = new RTCPeerConnection();
+  myPeerConnection = new RTCPeerConnection({
+    iceServers: [
+      {
+        urls: [
+          'stun:stun.l.google.com:19302',
+          'stun:stun1.l.google.com:19302',
+          'stun:stun2.l.google.com:19302',
+          'stun:stun3.l.google.com:19302',
+          'stun:stun4.l.google.com:19302',
+        ],
+      },
+    ],
+  });
+
   myPeerConnection.addEventListener('icecandidate', handleIce);
   myPeerConnection.addEventListener('addstream', handleAddStream); // peer 간의 연결에 스트림을 추가하면 발생하는 이벤트
   myStream
